@@ -8,6 +8,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script>
   /* ============================================================
      CONFIGURACIÓN — pegá acá EXACTAMENTE el mismo firebaseConfig
@@ -57,9 +58,11 @@
   .brand-name{font-family:'Fredoka',sans-serif;font-weight:600;color:#fff;font-size:17px;}
   .brand-sub{font-size:11px;color:var(--naranja-suave);font-weight:500;letter-spacing:0.4px;text-transform:uppercase;}
   .live-dot{
-    margin-left:auto;display:flex;align-items:center;gap:7px;
+    margin-left:auto;display:flex;align-items:center;gap:16px;
     color:rgba(255,255,255,0.75);font-size:12.5px;font-weight:600;
   }
+  .live-count{color:rgba(255,255,255,0.55);font-weight:500;}
+  .live-status{display:flex;align-items:center;gap:7px;}
   .live-dot span.dot{
     width:8px;height:8px;border-radius:50%;background:#3ddc84;
     box-shadow:0 0 0 rgba(61,220,132,0.6);animation:pulse 1.8s infinite;
@@ -71,20 +74,33 @@
   }
 
   main{padding:32px 26px 70px;}
-  .mosaico-head{max-width:1200px;margin:0 auto 28px;text-align:center;}
-  .mosaico-head .eyebrow{color:var(--naranja-suave);font-size:12px;font-weight:700;letter-spacing:1.4px;text-transform:uppercase;}
-  .mosaico-head h1{font-family:'Fredoka',sans-serif;color:#fff;font-size:32px;margin:6px 0 4px;font-weight:600;}
-  .mosaico-head p{color:rgba(255,255,255,0.6);font-size:14px;margin:0;}
+  .mosaico-head{max-width:1200px;margin:0 auto 36px;text-align:center;}
+  .mosaico-head h1{
+    font-family:'Fredoka',sans-serif;color:#fff;font-weight:700;margin:0;
+    font-size:clamp(32px, 6vw, 64px);letter-spacing:0.5px;line-height:1.05;
+    text-shadow:0 6px 24px rgba(0,0,0,0.25);
+  }
 
   .mosaico-grid{
     max-width:1200px;margin:0 auto;
     display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:24px 18px;
   }
   .tile{
-    background:#fff;padding:8px 8px 30px;border-radius:6px;position:relative;
+    background:#fff;padding:8px 8px 10px;border-radius:6px;position:relative;
     box-shadow:0 8px 20px rgba(0,0,0,0.28);
     animation:tileIn .45s ease both;
   }
+  .tile-img-wrap{position:relative;}
+  .tile-delete{
+    position:absolute;top:6px;right:6px;width:26px;height:26px;border-radius:50%;
+    background:rgba(15,42,74,0.85);color:#fff;border:none;cursor:pointer;
+    display:none;align-items:center;justify-content:center;font-size:15px;line-height:1;
+    opacity:0;transform:scale(0.85);transition:opacity .15s ease, transform .15s ease, background .15s ease;
+    z-index:2;
+  }
+  body.admin-mode .tile-delete{display:flex;}
+  body.admin-mode .tile:hover .tile-delete{opacity:1;transform:scale(1);}
+  .tile-delete:hover{background:#C43D3D;}
   @keyframes tileIn{from{opacity:0;transform:scale(0.82) translateY(10px);}to{opacity:1;transform:scale(1) translateY(0);}}
   .tile::before{
     content:'';position:absolute;top:-9px;left:50%;transform:translateX(-50%) rotate(-4deg);
@@ -99,10 +115,41 @@
   .mosaico-empty, .mosaico-loading{
     text-align:center;color:rgba(255,255,255,0.55);padding:90px 20px;font-size:15px;max-width:1200px;margin:0 auto;
   }
-  .config-warning{
-    max-width:1200px;margin:0 auto 24px;background:#FFF4E5;border:1px solid #F4690E;color:#7a3b0a;
-    font-size:13px;padding:14px 16px;border-radius:12px;line-height:1.5;
+  .admin-btn{
+    background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);color:rgba(255,255,255,0.75);
+    font-size:12px;font-weight:600;padding:7px 12px;border-radius:9px;cursor:pointer;
+    display:flex;align-items:center;gap:6px;transition:background .15s ease;
   }
+  .admin-btn:hover{background:rgba(255,255,255,0.16);}
+  .admin-btn.is-active{background:var(--naranja);border-color:var(--naranja);color:#fff;}
+
+  .admin-panel{
+    position:absolute;top:64px;right:26px;z-index:60;width:230px;
+    background:#fff;border-radius:14px;padding:16px;box-shadow:0 14px 34px rgba(0,0,0,0.35);
+    display:none;
+  }
+  .admin-panel.open{display:block;}
+  .admin-panel h3{font-family:'Fredoka',sans-serif;font-size:14px;margin:0 0 10px;color:var(--azul-profundo);}
+  .admin-panel input{
+    width:100%;padding:9px 11px;border-radius:9px;border:1.5px solid #E7E1D8;font-size:13px;
+    margin-bottom:8px;font-family:'Inter',sans-serif;box-sizing:border-box;
+  }
+  .admin-panel button{
+    width:100%;padding:10px;border:none;border-radius:9px;background:var(--azul-profundo);
+    color:#fff;font-weight:600;font-size:13px;cursor:pointer;margin-top:2px;
+  }
+  .admin-panel .admin-msg{font-size:11.5px;color:#C43D3D;margin-top:8px;min-height:14px;}
+  .admin-panel .admin-logout{background:#C43D3D;margin-top:10px;}
+
+  .tile-likes{
+    display:flex;align-items:center;justify-content:center;gap:5px;
+    background:none;border:none;cursor:pointer;width:100%;padding:5px 0 0;
+    font-family:'Inter',sans-serif;font-size:12.5px;font-weight:600;color:#8b97a3;
+  }
+  .tile-likes .heart{font-size:14px;transition:transform .15s ease;}
+  .tile-likes.liked .heart{transform:scale(1.15);}
+  .tile-likes.liked{color:#C43D3D;}
+  .tile-likes:active .heart{transform:scale(1.3);}
 </style>
 </head>
 <body>
@@ -112,17 +159,27 @@
       <div class="brand-name">CISSAB</div>
       <div class="brand-sub">Mosaico de avatares</div>
     </div>
-    <div class="live-dot"><span class="dot"></span>En vivo</div>
+    <button type="button" class="admin-btn" id="adminToggleBtn">🔒 Admin</button>
+    <div class="live-dot">
+      <span class="live-count" id="liveCount"></span>
+      <span class="live-status"><span class="dot"></span>En vivo</span>
+    </div>
   </header>
+
+  <div class="admin-panel" id="adminPanel">
+    <h3>Acceso admin</h3>
+    <input type="email" id="adminEmail" placeholder="Email" autocomplete="username">
+    <input type="password" id="adminPassword" placeholder="Contraseña" autocomplete="current-password">
+    <button type="button" id="adminLoginBtn">Ingresar</button>
+    <div class="admin-msg" id="adminMsg"></div>
+  </div>
 
   <main>
     <div id="configWarning" class="config-warning" style="display:none;">
       ⚠️ Falta pegar el <strong>firebaseConfig</strong> arriba del todo en el código de este archivo (y en panel-dibujo.html), y debe ser el mismo en los dos.
     </div>
     <div class="mosaico-head">
-      <div class="eyebrow">Acreditación CISSAB</div>
-      <h1 id="mosaicoCount">Mosaico de avatares</h1>
-      <p>Se va llenando solo a medida que la gente dibuja el suyo.</p>
+      <h1>MOSAICO CISSABEÑO 2026</h1>
     </div>
     <div id="mosaicoContent"><div class="mosaico-loading">Conectando…</div></div>
   </main>
@@ -130,6 +187,7 @@
 <script>
 (function(){
   let db = null;
+  let auth = null;
   let configOk = false;
   try{
     const cfg = window.FIREBASE_CONFIG;
@@ -137,11 +195,12 @@
     if(configOk){
       firebase.initializeApp(cfg);
       db = firebase.database();
+      auth = firebase.auth();
     }
   }catch(err){ console.error('Error inicializando Firebase', err); configOk = false; }
 
   const content = document.getElementById('mosaicoContent');
-  const countEl = document.getElementById('mosaicoCount');
+  const countEl = document.getElementById('liveCount');
   const grid = document.createElement('div');
   grid.className = 'mosaico-grid';
   let count = 0;
@@ -161,6 +220,46 @@
     grid
   );
 
+  // ---------------- Admin: login / logout ----------------
+  const adminToggleBtn = document.getElementById('adminToggleBtn');
+  const adminPanel = document.getElementById('adminPanel');
+  const adminEmail = document.getElementById('adminEmail');
+  const adminPassword = document.getElementById('adminPassword');
+  const adminMsg = document.getElementById('adminMsg');
+  let isAdmin = false;
+
+  adminToggleBtn.addEventListener('click', ()=>{
+    if(isAdmin){
+      auth.signOut();
+      return;
+    }
+    adminPanel.classList.toggle('open');
+  });
+
+  document.getElementById('adminLoginBtn').addEventListener('click', ()=>{
+    adminMsg.textContent = '';
+    const email = adminEmail.value.trim();
+    const pass = adminPassword.value;
+    if(!email || !pass){ adminMsg.textContent = 'Completá email y contraseña.'; return; }
+    auth.signInWithEmailAndPassword(email, pass).catch(err=>{
+      console.error(err);
+      adminMsg.textContent = 'No se pudo iniciar sesión. Revisá los datos.';
+    });
+  });
+
+  auth.onAuthStateChanged((user)=>{
+    isAdmin = !!user;
+    document.body.classList.toggle('admin-mode', isAdmin);
+    adminToggleBtn.classList.toggle('is-active', isAdmin);
+    adminToggleBtn.textContent = isAdmin ? '🔓 Salir admin' : '🔒 Admin';
+    if(isAdmin){
+      adminPanel.classList.remove('open');
+      adminEmail.value = '';
+      adminPassword.value = '';
+      adminMsg.textContent = '';
+    }
+  });
+
   function hashStr(s){
     let h=0;
     for(let i=0;i<s.length;i++){ h = (h*31 + s.charCodeAt(i)) | 0; }
@@ -177,9 +276,32 @@
   updateCount();
 
   const ref = db.ref('avatares').limitToLast(1000);
+  const tilesByKey = {};
+
+  function likeBtnHtml(key, likes){
+    const liked = localStorage.getItem('liked:' + key) === '1';
+    return '<button type="button" class="tile-likes'+(liked?' liked':'')+'" data-key="'+key+'">'
+         + '<span class="heart">'+(liked ? '❤️' : '🤍')+'</span>'
+         + '<span class="like-count">'+likes+'</span>'
+         + '</button>';
+  }
+
+  function wireLikeBtn(tile, key){
+    const btn = tile.querySelector('.tile-likes');
+    btn.addEventListener('click', ()=>{
+      const storageKey = 'liked:' + key;
+      const alreadyLiked = localStorage.getItem(storageKey) === '1';
+      const delta = alreadyLiked ? -1 : 1;
+      db.ref('avatares/' + key + '/likes').transaction(curr => Math.max(0, (curr||0) + delta));
+      if(alreadyLiked){ localStorage.removeItem(storageKey); btn.classList.remove('liked'); btn.querySelector('.heart').textContent = '🤍'; }
+      else{ localStorage.setItem(storageKey, '1'); btn.classList.add('liked'); btn.querySelector('.heart').textContent = '❤️'; }
+    });
+  }
+
   ref.on('child_added', (snapshot)=>{
     const r = snapshot.val();
     if(!r || !r.img) return;
+    const key = snapshot.key;
     const idx = count;
     count++;
     const tape = (hashStr((r.name||'') + idx) % 2 === 0) ? '' : ' tape-azul';
@@ -188,10 +310,47 @@
     const tile = document.createElement('div');
     tile.className = 'tile' + tape;
     tile.style.transform = 'rotate(' + rot + 'deg)';
-    tile.innerHTML = '<img src="'+r.img+'" alt="'+safeName+'" loading="lazy"><div class="tname">'+safeName+'</div>';
+    tile.innerHTML =
+      '<div class="tile-img-wrap">'
+      + '<img src="'+r.img+'" alt="'+safeName+'" loading="lazy">'
+      + '<button type="button" class="tile-delete" title="Eliminar avatar">✕</button>'
+      + '</div>'
+      + '<div class="tname">'+safeName+'</div>'
+      + likeBtnHtml(key, r.likes || 0);
+    tile.querySelector('.tile-delete').addEventListener('click', (e)=>{
+      e.stopPropagation();
+      if(!confirm('¿Eliminar el avatar de "'+ (r.name||'este socio') +'"? No se puede deshacer.')) return;
+      db.ref('avatares/' + key).remove().catch(err=>{
+        console.error(err);
+        alert('No se pudo eliminar. Revisá las reglas de Firebase (deben permitir borrar).');
+      });
+    });
+    wireLikeBtn(tile, key);
     grid.appendChild(tile);
+    tilesByKey[key] = tile;
     updateCount();
   });
+
+  ref.on('child_changed', (snapshot)=>{
+    const key = snapshot.key;
+    const tile = tilesByKey[key];
+    if(!tile) return;
+    const r = snapshot.val() || {};
+    const countSpan = tile.querySelector('.like-count');
+    if(countSpan) countSpan.textContent = r.likes || 0;
+  });
+
+  ref.on('child_removed', (snapshot)=>{
+    const key = snapshot.key;
+    const tile = tilesByKey[key];
+    if(tile){
+      tile.remove();
+      delete tilesByKey[key];
+      count = Math.max(0, count - 1);
+      updateCount();
+    }
+  });
+
   ref.on('cancelled', (err)=>{
     console.error('Firebase permission error', err);
     content.innerHTML = '<div class="mosaico-empty">No pudimos leer el mosaico (revisá las reglas de la base).</div>';
