@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+<title>CISSAB · Mosaico de avatares</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<style>
+  /* ============================================================
+     CONFIGURACIÓN — pegá acá EXACTAMENTE el mismo firebaseConfig
+     que pegaste en panel-dibujo.html, para que lean la misma base.
+  ============================================================= */
+  window.FIREBASE_CONFIG = {
+    apiKey: "PEGÁ_ACÁ",
+    authDomain: "PEGÁ_ACÁ",
+    databaseURL: "PEGÁ_ACÁ",
+    projectId: "PEGÁ_ACÁ",
+    storageBucket: "PEGÁ_ACÁ",
+    messagingSenderId: "PEGÁ_ACÁ",
+    appId: "PEGÁ_ACÁ"
+  };
+  /* ============================================================ */
+</style>
+<style>
+  :root{
+    --naranja:#F4690E;
+    --naranja-suave:#FFB27A;
+    --azul-profundo:#0F2A4A;
+    --azul-medio:#2C5AA0;
+    --blanco:#FFFFFF;
+    --carbon:#182430;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:'Inter',sans-serif;color:var(--carbon);
+    background:
+      radial-gradient(circle at 15% 10%, rgba(244,105,14,0.15), transparent 40%),
+      radial-gradient(circle at 85% 85%, rgba(44,90,160,0.28), transparent 45%),
+      var(--azul-profundo);
+    min-height:100vh;
+  }
+  header{
+    display:flex;align-items:center;gap:12px;padding:20px 26px;
+    border-bottom:1px solid rgba(255,255,255,0.08);
+  }
+  .brand-badge{
+    width:38px;height:38px;border-radius:10px;
+    background:linear-gradient(135deg,var(--naranja),#ff8a3d);
+    display:flex;align-items:center;justify-content:center;
+    font-family:'Fredoka',sans-serif;font-weight:700;color:#fff;font-size:15px;flex-shrink:0;
+  }
+  .brand-name{font-family:'Fredoka',sans-serif;font-weight:600;color:#fff;font-size:17px;}
+  .brand-sub{font-size:11px;color:var(--naranja-suave);font-weight:500;letter-spacing:0.4px;text-transform:uppercase;}
+  .live-dot{
+    margin-left:auto;display:flex;align-items:center;gap:7px;
+    color:rgba(255,255,255,0.75);font-size:12.5px;font-weight:600;
+  }
+  .live-dot span.dot{
+    width:8px;height:8px;border-radius:50%;background:#3ddc84;
+    box-shadow:0 0 0 rgba(61,220,132,0.6);animation:pulse 1.8s infinite;
+  }
+  @keyframes pulse{
+    0%{box-shadow:0 0 0 0 rgba(61,220,132,0.5);}
+    70%{box-shadow:0 0 0 8px rgba(61,220,132,0);}
+    100%{box-shadow:0 0 0 0 rgba(61,220,132,0);}
+  }
+
+  main{padding:32px 26px 70px;}
+  .mosaico-head{max-width:1200px;margin:0 auto 28px;text-align:center;}
+  .mosaico-head .eyebrow{color:var(--naranja-suave);font-size:12px;font-weight:700;letter-spacing:1.4px;text-transform:uppercase;}
+  .mosaico-head h1{font-family:'Fredoka',sans-serif;color:#fff;font-size:32px;margin:6px 0 4px;font-weight:600;}
+  .mosaico-head p{color:rgba(255,255,255,0.6);font-size:14px;margin:0;}
+
+  .mosaico-grid{
+    max-width:1200px;margin:0 auto;
+    display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:24px 18px;
+  }
+  .tile{
+    background:#fff;padding:8px 8px 30px;border-radius:6px;position:relative;
+    box-shadow:0 8px 20px rgba(0,0,0,0.28);
+    animation:tileIn .45s ease both;
+  }
+  @keyframes tileIn{from{opacity:0;transform:scale(0.82) translateY(10px);}to{opacity:1;transform:scale(1) translateY(0);}}
+  .tile::before{
+    content:'';position:absolute;top:-9px;left:50%;transform:translateX(-50%) rotate(-4deg);
+    width:44px;height:16px;background:rgba(244,105,14,0.55);
+  }
+  .tile.tape-azul::before{background:rgba(44,90,160,0.55);transform:translateX(-50%) rotate(4deg);}
+  .tile img{width:100%;aspect-ratio:1/1;object-fit:cover;border-radius:2px;display:block;background:#fff;}
+  .tile .tname{
+    font-family:'Fredoka',sans-serif;font-weight:600;font-size:13px;color:var(--azul-profundo);
+    text-align:center;margin-top:9px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  }
+  .mosaico-empty, .mosaico-loading{
+    text-align:center;color:rgba(255,255,255,0.55);padding:90px 20px;font-size:15px;max-width:1200px;margin:0 auto;
+  }
+  .config-warning{
+    max-width:1200px;margin:0 auto 24px;background:#FFF4E5;border:1px solid #F4690E;color:#7a3b0a;
+    font-size:13px;padding:14px 16px;border-radius:12px;line-height:1.5;
+  }
+</style>
+</head>
+<body>
+  <header>
+    <div class="brand-badge">CB</div>
+    <div>
+      <div class="brand-name">CISSAB</div>
+      <div class="brand-sub">Mosaico de avatares</div>
+    </div>
+    <div class="live-dot"><span class="dot"></span>En vivo</div>
+  </header>
+
+  <main>
+    <div id="configWarning" class="config-warning" style="display:none;">
+      ⚠️ Falta pegar el <strong>firebaseConfig</strong> arriba del todo en el código de este archivo (y en panel-dibujo.html), y debe ser el mismo en los dos.
+    </div>
+    <div class="mosaico-head">
+      <div class="eyebrow">Acreditación CISSAB</div>
+      <h1 id="mosaicoCount">Mosaico de avatares</h1>
+      <p>Se va llenando solo a medida que la gente dibuja el suyo.</p>
+    </div>
+    <div id="mosaicoContent"><div class="mosaico-loading">Conectando…</div></div>
+  </main>
+
+<script>
+(function(){
+  let db = null;
+  let configOk = false;
+  try{
+    const cfg = window.FIREBASE_CONFIG;
+    configOk = cfg && cfg.databaseURL && !String(cfg.databaseURL).includes('PEGÁ_ACÁ');
+    if(configOk){
+      firebase.initializeApp(cfg);
+      db = firebase.database();
+    }
+  }catch(err){ console.error('Error inicializando Firebase', err); configOk = false; }
+
+  const content = document.getElementById('mosaicoContent');
+  const countEl = document.getElementById('mosaicoCount');
+  const grid = document.createElement('div');
+  grid.className = 'mosaico-grid';
+  let count = 0;
+
+  if(!configOk){
+    document.getElementById('configWarning').style.display = 'block';
+    content.innerHTML = '<div class="mosaico-empty">No se pudo conectar a la base de datos.</div>';
+    return;
+  }
+
+  content.innerHTML = '';
+  content.appendChild(grid);
+  content.insertBefore(
+    Object.assign(document.createElement('div'), {
+      id:'emptyState', className:'mosaico-empty', textContent:'Todavía no hay avatares. ¡Escaneá el QR y sé el primero! 🧡'
+    }),
+    grid
+  );
+
+  function hashStr(s){
+    let h=0;
+    for(let i=0;i<s.length;i++){ h = (h*31 + s.charCodeAt(i)) | 0; }
+    return Math.abs(h);
+  }
+  function escapeHtml(s){
+    return s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+  function updateCount(){
+    countEl.textContent = count + (count===1 ? ' avatar' : ' avatares');
+    document.getElementById('emptyState').style.display = count===0 ? 'block' : 'none';
+    grid.style.display = count===0 ? 'none' : 'grid';
+  }
+  updateCount();
+
+  const ref = db.ref('avatares').limitToLast(1000);
+  ref.on('child_added', (snapshot)=>{
+    const r = snapshot.val();
+    if(!r || !r.img) return;
+    const idx = count;
+    count++;
+    const tape = (hashStr((r.name||'') + idx) % 2 === 0) ? '' : ' tape-azul';
+    const rot = (hashStr('r' + (r.name||'') + idx) % 7) - 3;
+    const safeName = escapeHtml(r.name || 'Sin nombre');
+    const tile = document.createElement('div');
+    tile.className = 'tile' + tape;
+    tile.style.transform = 'rotate(' + rot + 'deg)';
+    tile.innerHTML = '<img src="'+r.img+'" alt="'+safeName+'" loading="lazy"><div class="tname">'+safeName+'</div>';
+    grid.appendChild(tile);
+    updateCount();
+  });
+  ref.on('cancelled', (err)=>{
+    console.error('Firebase permission error', err);
+    content.innerHTML = '<div class="mosaico-empty">No pudimos leer el mosaico (revisá las reglas de la base).</div>';
+  });
+})();
+</script>
+</body>
+</html>
