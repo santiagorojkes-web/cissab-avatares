@@ -85,6 +85,15 @@
     max-width:1200px;margin:0 auto;
     display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:24px 18px;
   }
+  @media (max-width:640px){
+    main{padding:24px 14px 60px;}
+    .mosaico-grid{grid-template-columns:repeat(3, 1fr);gap:14px 10px;}
+    .tile{padding:5px 5px 8px;}
+    .tile .tname{font-size:10.5px;margin-top:6px;}
+    .tile-likes{font-size:10.5px;gap:3px;}
+    .tile-likes .heart{font-size:11px;}
+    .tile-delete{width:22px;height:22px;font-size:12px;}
+  }
   .tile{
     background:#fff;padding:8px 8px 10px;border-radius:6px;position:relative;
     box-shadow:0 8px 20px rgba(0,0,0,0.28);
