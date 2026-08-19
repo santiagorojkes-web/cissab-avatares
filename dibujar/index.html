@@ -81,18 +81,49 @@
   }
   input.name-input:focus{outline:none;border-color:var(--naranja);background:#fff;}
 
+  .canvas-hint{
+    text-align:center;font-family:'Fredoka',sans-serif;font-weight:600;font-size:15px;
+    color:var(--azul-profundo);background:#FFF4E5;border:1.5px dashed var(--naranja-suave);
+    border-radius:12px;padding:9px 10px;margin-bottom:12px;
+  }
   .canvas-wrap{
-    position:relative;width:100%;aspect-ratio:1/1;margin:0 auto 14px;
+    position:relative;width:100%;aspect-ratio:1/1;margin:0 auto 16px;
     border-radius:16px;overflow:hidden;border:2px solid var(--naranja-suave);background:#fff;
   }
   #padCanvas{width:100%;height:100%;display:block;touch-action:none;cursor:crosshair;background:#fff;}
 
-  .draw-tools{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:20px;flex-wrap:wrap;}
-  .swatches{display:flex;gap:7px;}
-  .swatch{width:26px;height:26px;border-radius:50%;border:2px solid rgba(0,0,0,0.08);cursor:pointer;transition:transform .12s ease;flex-shrink:0;}
-  .swatch.active{transform:scale(1.18);box-shadow:0 0 0 2px #fff,0 0 0 4px var(--azul-medio);}
+  .draw-tools{display:flex;align-items:center;justify-content:space-between;gap:18px;margin-bottom:14px;flex-wrap:wrap;}
+  .draw-tools.tool-btns-row{margin-bottom:20px;}
+  .tool-group{display:flex;flex-direction:column;gap:6px;flex:1;min-width:120px;}
+  .tool-label{font-size:11.5px;font-weight:700;letter-spacing:0.4px;text-transform:uppercase;color:#8b97a3;}
+
+  .color-bar{
+    display:flex;align-items:center;background:#F1ECE3;border-radius:12px;padding:6px;height:40px;
+  }
+  .color-bar input[type=color]{
+    -webkit-appearance:none;appearance:none;width:100%;height:100%;border:none;background:none;
+    cursor:pointer;border-radius:8px;padding:0;
+  }
+  .color-bar input[type=color]::-webkit-color-swatch-wrapper{padding:0;border-radius:8px;}
+  .color-bar input[type=color]::-webkit-color-swatch{border:none;border-radius:8px;}
+  .color-bar input[type=color]::-moz-color-swatch{border:none;border-radius:8px;}
+
+  .thickness-row{display:flex;align-items:center;gap:10px;height:40px;}
+  .thickness-row input[type=range]{flex:1;accent-color:var(--naranja);}
+  .size-preview-wrap{
+    width:34px;height:34px;border-radius:8px;background:#F1ECE3;display:flex;align-items:center;justify-content:center;flex-shrink:0;
+  }
+  .size-dot{width:8px;height:8px;border-radius:50%;background:var(--carbon);display:block;}
+
+  .mode-toggle{display:flex;background:#F1ECE3;border-radius:10px;padding:3px;gap:2px;}
+  .mode-toggle button{
+    border:none;background:transparent;color:#7c8a97;font-size:12.5px;font-weight:600;
+    padding:8px 12px;border-radius:8px;cursor:pointer;transition:all .15s ease;
+  }
+  .mode-toggle button.active{background:var(--azul-profundo);color:#fff;}
+
   .tool-btns{display:flex;gap:6px;}
-  .tool-btns button{border:none;background:#F1ECE3;color:var(--azul-profundo);font-size:12px;font-weight:600;padding:7px 11px;border-radius:8px;cursor:pointer;}
+  .tool-btns button{border:none;background:#F1ECE3;color:var(--azul-profundo);font-size:12px;font-weight:600;padding:9px 12px;border-radius:8px;cursor:pointer;}
   .tool-btns button:hover{background:#E7E1D8;}
 
   .save-btn{
@@ -145,20 +176,33 @@
         <p class="desc">Poné tu nombre y dibujalo con el dedo o el mouse. Después aparece en el mosaico gigante.</p>
 
         <label class="field-label">Tu nombre</label>
-        <input id="nameInput" class="name-input" type="text" maxlength="30" placeholder="Ej: Vicky Rozic">
+        <input id="nameInput" class="name-input" type="text" maxlength="30" placeholder="Nombre y Apellido o Apodo">
 
+        <div class="canvas-hint">✏️ Dibujate a vos mismo/a</div>
         <div class="canvas-wrap">
           <canvas id="padCanvas" width="320" height="320"></canvas>
         </div>
 
         <div class="draw-tools">
-          <div class="swatches">
-            <div class="swatch active" style="background:#182430" data-color="#182430"></div>
-            <div class="swatch" style="background:#F4690E" data-color="#F4690E"></div>
-            <div class="swatch" style="background:#2C5AA0" data-color="#2C5AA0"></div>
-            <div class="swatch" style="background:#1E7A3E" data-color="#1E7A3E"></div>
-            <div class="swatch" style="background:#C43D3D" data-color="#C43D3D"></div>
-            <div class="swatch" style="background:#ffffff;box-shadow:inset 0 0 0 1px #ddd" data-color="#ffffff"></div>
+          <div class="tool-group">
+            <label class="tool-label">Color</label>
+            <div class="color-bar">
+              <input type="color" id="colorInput" value="#182430">
+            </div>
+          </div>
+          <div class="tool-group">
+            <label class="tool-label">Grosor</label>
+            <div class="thickness-row">
+              <input type="range" id="sizeSlider" min="2" max="36" value="7">
+              <span class="size-preview-wrap"><span id="sizePreview" class="size-dot"></span></span>
+            </div>
+          </div>
+        </div>
+
+        <div class="draw-tools tool-btns-row">
+          <div class="mode-toggle">
+            <button type="button" id="penModeBtn" class="active">✏️ Lápiz</button>
+            <button type="button" id="fillModeBtn">🪣 Balde</button>
           </div>
           <div class="tool-btns">
             <button type="button" id="undoBtn">Deshacer</button>
@@ -205,6 +249,8 @@
 
   let hasContent = false;
   let drawColor = '#182430';
+  let brushSize = 7;
+  let toolMode = 'pen'; // 'pen' | 'fill'
   let undoStack = [];
 
   function clearCanvasWhite(){
@@ -232,9 +278,82 @@
     }catch(err){}
   }
 
+  // --- Color y grosor ---
+  const colorInput = document.getElementById('colorInput');
+  const sizeSlider = document.getElementById('sizeSlider');
+  const sizePreview = document.getElementById('sizePreview');
+  function updateSizePreview(){
+    const px = Math.max(4, Math.round(brushSize * 0.85));
+    sizePreview.style.width = px + 'px';
+    sizePreview.style.height = px + 'px';
+    sizePreview.style.background = drawColor;
+  }
+  colorInput.addEventListener('input', ()=>{
+    drawColor = colorInput.value;
+    updateSizePreview();
+  });
+  sizeSlider.addEventListener('input', ()=>{
+    brushSize = parseInt(sizeSlider.value, 10);
+    updateSizePreview();
+  });
+  updateSizePreview();
+
+  // --- Modo lápiz / balde ---
+  const penModeBtn = document.getElementById('penModeBtn');
+  const fillModeBtn = document.getElementById('fillModeBtn');
+  function setToolMode(m){
+    toolMode = m;
+    penModeBtn.classList.toggle('active', m==='pen');
+    fillModeBtn.classList.toggle('active', m==='fill');
+    canvas.style.cursor = m==='fill' ? 'copy' : 'crosshair';
+  }
+  penModeBtn.addEventListener('click', ()=>setToolMode('pen'));
+  fillModeBtn.addEventListener('click', ()=>setToolMode('fill'));
+
+  // --- Balde de pintura (flood fill) ---
+  function hexToRgb(hex){
+    const v = parseInt(hex.replace('#',''),16);
+    return [(v>>16)&255,(v>>8)&255,v&255];
+  }
+  function floodFill(x0,y0){
+    const w = canvas.width, h = canvas.height;
+    x0 = Math.max(0, Math.min(w-1, x0|0));
+    y0 = Math.max(0, Math.min(h-1, y0|0));
+    const imgData = ctx.getImageData(0,0,w,h);
+    const data = imgData.data;
+    const i0 = (y0*w+x0)*4;
+    const startR=data[i0], startG=data[i0+1], startB=data[i0+2];
+    const [fr,fg,fb] = hexToRgb(drawColor);
+    if(startR===fr && startG===fg && startB===fb) return false;
+    const tolerance = 45;
+    const visited = new Uint8Array(w*h);
+    const stack = [[x0,y0]];
+    while(stack.length){
+      const [x,y] = stack.pop();
+      if(x<0||x>=w||y<0||y>=h) continue;
+      const vi = y*w+x;
+      if(visited[vi]) continue;
+      const i = vi*4;
+      const dr = data[i]-startR, dg = data[i+1]-startG, db = data[i+2]-startB;
+      if(Math.sqrt(dr*dr+dg*dg+db*db) > tolerance) continue;
+      visited[vi] = 1;
+      data[i]=fr; data[i+1]=fg; data[i+2]=fb; data[i+3]=255;
+      stack.push([x+1,y]); stack.push([x-1,y]); stack.push([x,y+1]); stack.push([x,y-1]);
+    }
+    ctx.putImageData(imgData,0,0);
+    return true;
+  }
+
   let drawing = false;
   function startDraw(e){
     e.preventDefault();
+    if(toolMode==='fill'){
+      pushUndoSnapshot();
+      const p = posFromEvent(e);
+      const filled = floodFill(p.x, p.y);
+      if(filled){ hasContent = true; updateSaveState(); }
+      return;
+    }
     pushUndoSnapshot();
     drawing = true;
     const p = posFromEvent(e);
@@ -242,10 +361,10 @@
     ctx.moveTo(p.x,p.y);
     ctx.lineCap='round'; ctx.lineJoin='round';
     ctx.strokeStyle = drawColor;
-    ctx.lineWidth = 7;
+    ctx.lineWidth = brushSize;
   }
   function moveDraw(e){
-    if(!drawing) return;
+    if(!drawing || toolMode!=='pen') return;
     e.preventDefault();
     const p = posFromEvent(e);
     ctx.lineTo(p.x,p.y);
@@ -261,13 +380,6 @@
   canvas.addEventListener('touchmove', moveDraw, {passive:false});
   canvas.addEventListener('touchend', endDraw);
 
-  document.querySelectorAll('.swatch').forEach(sw=>{
-    sw.addEventListener('click', ()=>{
-      document.querySelectorAll('.swatch').forEach(s=>s.classList.remove('active'));
-      sw.classList.add('active');
-      drawColor = sw.dataset.color;
-    });
-  });
   document.getElementById('clearBtn').addEventListener('click', ()=>{
     pushUndoSnapshot();
     clearCanvasWhite();
@@ -314,6 +426,12 @@
     clearCanvasWhite();
     hasContent = false;
     undoStack = [];
+    drawColor = '#182430';
+    brushSize = 7;
+    colorInput.value = drawColor;
+    sizeSlider.value = brushSize;
+    setToolMode('pen');
+    updateSizePreview();
     updateSaveState();
   });
 })();
