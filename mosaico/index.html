@@ -76,10 +76,18 @@
   main{padding:32px 26px 70px;}
   .mosaico-head{max-width:1200px;margin:0 auto 36px;text-align:center;}
   .mosaico-head h1{
-    font-family:'Fredoka',sans-serif;color:#fff;font-weight:700;margin:0;
+    font-family:'Fredoka',sans-serif;color:#fff;font-weight:700;margin:0 0 16px;
     font-size:clamp(32px, 6vw, 64px);letter-spacing:0.5px;line-height:1.05;
     text-shadow:0 6px 24px rgba(0,0,0,0.25);
   }
+  .download-btn{
+    background:var(--naranja);color:#fff;border:none;border-radius:11px;
+    padding:11px 20px;font-family:'Inter',sans-serif;font-weight:600;font-size:13.5px;
+    cursor:pointer;box-shadow:0 6px 16px rgba(244,105,14,0.35);
+    display:inline-flex;align-items:center;gap:7px;transition:transform .1s ease, opacity .15s ease;
+  }
+  .download-btn:hover{transform:translateY(-1px);}
+  .download-btn:disabled{opacity:0.45;cursor:not-allowed;transform:none;}
 
   .mosaico-grid{
     max-width:1200px;margin:0 auto;
@@ -189,6 +197,7 @@
     </div>
     <div class="mosaico-head">
       <h1>MOSAICO CISSABEÑO 2026</h1>
+      <button type="button" id="downloadMosaicoBtn" class="download-btn">⬇️ Descargar mosaico</button>
     </div>
     <div id="mosaicoContent"><div class="mosaico-loading">Conectando…</div></div>
   </main>
@@ -363,6 +372,110 @@
   ref.on('cancelled', (err)=>{
     console.error('Firebase permission error', err);
     content.innerHTML = '<div class="mosaico-empty">No pudimos leer el mosaico (revisá las reglas de la base).</div>';
+  });
+
+  // ---------------- Descargar imagen del mosaico ----------------
+  const downloadBtn = document.getElementById('downloadMosaicoBtn');
+  downloadBtn.addEventListener('click', async ()=>{
+    const tiles = Array.from(grid.querySelectorAll('.tile'));
+    if(tiles.length === 0){
+      alert('Todavía no hay avatares en el mosaico.');
+      return;
+    }
+    downloadBtn.disabled = true;
+    const originalText = downloadBtn.textContent;
+    downloadBtn.textContent = 'Generando…';
+    try{
+      // Cargar todas las imágenes primero
+      const items = await Promise.all(tiles.map(tile => new Promise((resolve)=>{
+        const imgEl = tile.querySelector('img');
+        const name = tile.querySelector('.tname') ? tile.querySelector('.tname').textContent : '';
+        const im = new Image();
+        im.onload = () => resolve({ im, name });
+        im.onerror = () => resolve({ im: null, name });
+        im.src = imgEl.src;
+      })));
+
+      if(document.fonts && document.fonts.ready){
+        try{ await document.fonts.ready; }catch(e){}
+      }
+
+      const cols = items.length <= 12 ? Math.min(4, items.length) : Math.ceil(Math.sqrt(items.length * 1.4));
+      const rows = Math.ceil(items.length / cols);
+      const cell = 300;
+      const pad = 18;
+      const nameH = 40;
+      const headerH = 130;
+
+      const canvasW = cols * cell + (cols+1) * pad;
+      const canvasH = headerH + rows * (cell + nameH) + (rows+1) * pad;
+
+      const out = document.createElement('canvas');
+      out.width = canvasW;
+      out.height = canvasH;
+      const octx = out.getContext('2d');
+
+      // Fondo
+      const grad = octx.createLinearGradient(0,0,canvasW,canvasH);
+      grad.addColorStop(0, '#0F2A4A');
+      grad.addColorStop(1, '#12325C');
+      octx.fillStyle = grad;
+      octx.fillRect(0,0,canvasW,canvasH);
+
+      // Título
+      octx.fillStyle = '#ffffff';
+      octx.textAlign = 'center';
+      octx.font = '700 46px Fredoka, sans-serif';
+      octx.fillText('MOSAICO CISSABEÑO 2026', canvasW/2, 78);
+      octx.font = '500 18px Inter, sans-serif';
+      octx.fillStyle = 'rgba(255,255,255,0.6)';
+      octx.fillText(items.length + (items.length===1 ? ' avatar' : ' avatares'), canvasW/2, 108);
+
+      // Tiles
+      items.forEach((item, i)=>{
+        const col = i % cols;
+        const row = Math.floor(i / cols);
+        const x = pad + col * (cell + pad);
+        const y = headerH + pad + row * (cell + nameH + pad);
+
+        octx.fillStyle = '#ffffff';
+        octx.fillRect(x, y, cell, cell + nameH);
+
+        if(item.im){
+          octx.save();
+          octx.beginPath();
+          octx.rect(x+6, y+6, cell-12, cell-12);
+          octx.clip();
+          octx.drawImage(item.im, x+6, y+6, cell-12, cell-12);
+          octx.restore();
+        }
+
+        octx.fillStyle = '#0F2A4A';
+        octx.font = '600 17px Fredoka, sans-serif';
+        octx.textAlign = 'center';
+        let label = item.name || 'Sin nombre';
+        if(octx.measureText(label).width > cell - 16){
+          while(label.length > 3 && octx.measureText(label + '…').width > cell - 16){
+            label = label.slice(0, -1);
+          }
+          label += '…';
+        }
+        octx.fillText(label, x + cell/2, y + cell + 27);
+      });
+
+      const dataUrl = out.toDataURL('image/png');
+      const a = document.createElement('a');
+      const stamp = new Date().toISOString().slice(0,10);
+      a.href = dataUrl;
+      a.download = 'mosaico-cissab-' + stamp + '.png';
+      a.click();
+    }catch(err){
+      console.error(err);
+      alert('No pudimos generar la imagen. Probá de nuevo.');
+    }finally{
+      downloadBtn.disabled = false;
+      downloadBtn.textContent = originalText;
+    }
   });
 })();
 </script>
