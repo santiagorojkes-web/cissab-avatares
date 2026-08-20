@@ -347,6 +347,9 @@
     grid.appendChild(tile);
     tilesByKey[key] = tile;
     updateCount();
+  }, (err)=>{
+    console.error('Firebase permission error', err);
+    content.innerHTML = '<div class="mosaico-empty">No pudimos leer el mosaico (revisá las reglas de la base).</div>';
   });
 
   ref.on('child_changed', (snapshot)=>{
@@ -367,11 +370,6 @@
       count = Math.max(0, count - 1);
       updateCount();
     }
-  });
-
-  ref.on('cancelled', (err)=>{
-    console.error('Firebase permission error', err);
-    content.innerHTML = '<div class="mosaico-empty">No pudimos leer el mosaico (revisá las reglas de la base).</div>';
   });
 
   // ---------------- Descargar imagen del mosaico ----------------
