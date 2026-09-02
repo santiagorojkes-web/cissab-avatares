@@ -80,6 +80,7 @@
     font-size:clamp(32px, 6vw, 64px);letter-spacing:0.5px;line-height:1.05;
     text-shadow:0 6px 24px rgba(0,0,0,0.25);
   }
+  .mosaico-actions{display:flex;justify-content:center;gap:10px;flex-wrap:wrap;}
   .download-btn{
     background:var(--naranja);color:#fff;border:none;border-radius:11px;
     padding:11px 20px;font-family:'Inter',sans-serif;font-weight:600;font-size:13.5px;
@@ -88,6 +89,15 @@
   }
   .download-btn:hover{transform:translateY(-1px);}
   .download-btn:disabled{opacity:0.45;cursor:not-allowed;transform:none;}
+  .delete-all-btn{
+    display:none;background:#C43D3D;color:#fff;border:none;border-radius:11px;
+    padding:11px 20px;font-family:'Inter',sans-serif;font-weight:600;font-size:13.5px;
+    cursor:pointer;box-shadow:0 6px 16px rgba(196,61,61,0.35);
+    align-items:center;gap:7px;transition:transform .1s ease, opacity .15s ease;
+  }
+  .delete-all-btn:hover{transform:translateY(-1px);}
+  .delete-all-btn:disabled{opacity:0.45;cursor:not-allowed;transform:none;}
+  body.admin-mode .delete-all-btn{display:inline-flex;}
 
   .mosaico-grid{
     max-width:1200px;margin:0 auto;
@@ -197,7 +207,10 @@
     </div>
     <div class="mosaico-head">
       <h1>MOSAICO CISSABEÑO 2026</h1>
-      <button type="button" id="downloadMosaicoBtn" class="download-btn">⬇️ Descargar mosaico</button>
+      <div class="mosaico-actions">
+        <button type="button" id="downloadMosaicoBtn" class="download-btn">⬇️ Descargar mosaico</button>
+        <button type="button" id="deleteAllBtn" class="delete-all-btn">🗑️ Borrar todos</button>
+      </div>
     </div>
     <div id="mosaicoContent"><div class="mosaico-loading">Conectando…</div></div>
   </main>
@@ -369,6 +382,41 @@
       delete tilesByKey[key];
       count = Math.max(0, count - 1);
       updateCount();
+    }
+  });
+
+  // ---------------- Borrar todos (solo admin) ----------------
+  const deleteAllBtn = document.getElementById('deleteAllBtn');
+  deleteAllBtn.addEventListener('click', async ()=>{
+    if(!isAdmin){ return; }
+    try{
+      const snap = await db.ref('avatares').once('value');
+      const keys = [];
+      snap.forEach(child => { keys.push(child.key); });
+      if(keys.length === 0){
+        alert('No hay avatares para borrar.');
+        return;
+      }
+      if(!confirm('Vas a eliminar los ' + keys.length + ' avatares del mosaico. Esta acción NO se puede deshacer. ¿Continuar?')) return;
+      const typed = prompt('Para confirmar, escribí BORRAR (en mayúsculas):');
+      if(typed !== 'BORRAR'){
+        alert('Cancelado. No se borró nada.');
+        return;
+      }
+      deleteAllBtn.disabled = true;
+      const originalText = deleteAllBtn.textContent;
+      deleteAllBtn.textContent = 'Borrando…';
+      const results = await Promise.allSettled(keys.map(k => db.ref('avatares/' + k).remove()));
+      const failed = results.filter(r => r.status === 'rejected').length;
+      deleteAllBtn.disabled = false;
+      deleteAllBtn.textContent = originalText;
+      if(failed > 0){
+        alert('Se borraron ' + (keys.length - failed) + ' de ' + keys.length + '. ' + failed + ' fallaron — revisá que las reglas de Firebase permitan borrar.');
+      }
+    }catch(err){
+      console.error(err);
+      alert('No pudimos borrar los avatares. Revisá la consola para más detalle.');
+      deleteAllBtn.disabled = false;
     }
   });
 
